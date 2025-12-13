@@ -14,4 +14,6 @@ def send_whatsapp(to, message):
         from_=FROM_NUMBER,
         to=f"whatsapp:{to}"
     )
+    print("TWILIO SID:", msg.sid)
     return msg.sid
+
