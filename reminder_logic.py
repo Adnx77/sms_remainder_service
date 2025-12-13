@@ -1,50 +1,30 @@
+from datetime import datetime, timedelta
 from firestore_service import get_children, update_reminder
-from sms_service import send_sms
-import datetime
+from whatsapp_service import send_whatsapp
 
-MAX_DAYS = 14
+def run_test_whatsapp():
+    send_whatsapp(
+        "+917306312986",
+        "✅ TEST: WhatsApp vaccination reminder system is working."
+    )
 
-def run_test_sms():
-    send_sms("7306312986", "✅ TEST: Vaccination SMS system is working.")
+def run_daily_reminders():
+    today = datetime.utcnow().date()
 
-def run_reminders():
-    today = datetime.date.today()
-
-    for doc in get_children():
-        child = doc.to_dict()
-        card_id = doc.id
-
-        parent = child.get("parent_phone")
+    for card_id, child in get_children():
+        phone = child.get("parent_phone")
         name = child.get("name", "your child")
+        vaccines = child.get("vaccines", {})
 
-        reminder = child.get("reminder", {})
-        days_sent = reminder.get("days_sent", 0)
+        overdue = [v for v, s in vaccines.items() if s == "due"]
 
-        if days_sent >= MAX_DAYS:
-            continue
+        if overdue:
+            msg = (
+                f"⚠️ Vaccination Reminder\n\n"
+                f"{name} has overdue vaccines:\n"
+                f"{', '.join(overdue)}\n\n"
+                f"Please visit the nearest health center."
+            )
 
-        vaccines = child.get("vaccination", {}).get("schedule", {})
-
-        for vaccine, vdata in vaccines.items():
-            status = vdata.get("status")
-            due_date = vdata.get("due_date")
-
-            if status == "done" or not due_date:
-                continue
-
-            due = datetime.datetime.strptime(due_date, "%Y-%m-%d").date()
-
-            if due < today:
-                msg = f"⚠️ ALERT: {name} missed {vaccine} vaccine on {due_date}. Visit clinic immediately."
-            elif (due - today).days <= 14:
-                msg = f"⏰ REMINDER: {name} is due for {vaccine} vaccine on {due_date}."
-            else:
-                continue
-
-            send_sms(parent, msg)
-
-            update_reminder(card_id, {
-                "last_sent": datetime.datetime.utcnow().isoformat(),
-                "days_sent": days_sent + 1
-            })
-            break
+            send_whatsapp(phone, msg)
+            update_reminder(card_id, "overdue")
