@@ -13,11 +13,19 @@ def home():
 
 @app.route("/run-daily")
 def run_daily():
-    if not authorized(request):
-        return jsonify({"error": "Unauthorized"}), 401
+    secret = request.args.get("secret")
+    if secret != os.environ.get("CRON_SECRET"):
+        return "Unauthorized", 401
 
-    run_daily_reminders()
-    return jsonify({"status": "Daily reminders sent"})
+    try:
+        run_daily_reminders()   # your logic
+    except Exception as e:
+        # log error internally
+        print("Cron error:", e)
+        return "ERROR", 500
+
+    # IMPORTANT: keep response tiny
+    return "OK", 200
 
 @app.route("/run-test")
 def run_test():
@@ -30,4 +38,5 @@ def run_test():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
