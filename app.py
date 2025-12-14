@@ -18,14 +18,16 @@ def run_daily():
         return "Unauthorized", 401
 
     try:
-        run_daily_reminders()   # your logic
+        run_daily_reminders()
     except Exception as e:
-        # log error internally
-        print("Cron error:", e)
+        # 🔥 THIS IS CRITICAL
+        print("RUN-DAILY ERROR:", str(e))
+        import traceback
+        traceback.print_exc()
         return "ERROR", 500
 
-    # IMPORTANT: keep response tiny
     return "OK", 200
+
 
 @app.route("/run-test")
 def run_test():
@@ -38,5 +40,6 @@ def run_test():
 if __name__ == "__main__":
     port = int(os.getenv("PORT", 5000))
     app.run(host="0.0.0.0", port=port)
+
 
 
