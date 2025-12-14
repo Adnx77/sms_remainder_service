@@ -20,8 +20,9 @@ def get_children():
     """
     Fetch all children documents from Firestore
     """
-    db = get_db()
-    return db.collection("children").stream()
+    docs = db.collection("children").stream()
+    for doc in docs:
+        yield doc.id, doc.to_dict()
 
 def update_reminder(card_id, reminder_data):
     """
@@ -31,3 +32,4 @@ def update_reminder(card_id, reminder_data):
     db.collection("children").document(card_id).set({
         "reminder": reminder_data
     }, merge=True)
+
